@@ -3,7 +3,8 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>L10 Meeting Timer</title>
+  <title>Temporizador de Reuni&#245;es</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0%25' stop-color='%23004466'/%3E%3Cstop offset='100%25' stop-color='%2300314A'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='64' height='64' rx='14' fill='url(%23g)'/%3E%3Ccircle cx='32' cy='35' r='18' fill='none' stroke='white' stroke-width='3'/%3E%3Cline x1='32' y1='35' x2='32' y2='23' stroke='white' stroke-width='3' stroke-linecap='round'/%3E%3Cline x1='32' y1='35' x2='40' y2='35' stroke='white' stroke-width='2.5' stroke-linecap='round'/%3E%3Crect x='28' y='12' width='8' height='4' rx='2' fill='white'/%3E%3C/svg%3E" />
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
 
@@ -42,7 +43,29 @@
       align-items: center;
       justify-content: center;
       padding: 20px;
-      transition: background 0.5s ease;
+      transition: background 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    /* ── ANIMATIONS ── */
+    @keyframes fadeInUp {
+      from { opacity: 0; transform: translateY(16px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+    @keyframes breathe {
+      0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent1) 20%, transparent); }
+      50% { box-shadow: 0 0 16px 2px color-mix(in srgb, var(--accent1) 15%, transparent); }
+    }
+    @keyframes shimmer {
+      0% { background-position: -200% 0; }
+      100% { background-position: 200% 0; }
+    }
+    @keyframes slideInRight {
+      from { opacity: 0; transform: translateX(12px); }
+      to { opacity: 1; transform: translateX(0); }
     }
 
     .wrap {
@@ -52,9 +75,10 @@
       border: 1px solid rgba(255,255,255,0.06);
       padding: 24px;
       border-radius: 16px;
-      box-shadow: 0 20px 60px rgba(0,0,0,0.4);
-      backdrop-filter: blur(10px);
-      transition: background 0.5s ease;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.4), 0 0 0 1px rgba(255,255,255,0.02) inset;
+      backdrop-filter: blur(12px);
+      transition: background 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+      animation: fadeInUp 0.5s cubic-bezier(0.4, 0, 0.2, 1) both;
     }
 
     /* ── BRAND SWITCHER ── */
@@ -112,6 +136,112 @@
     }
     .header-text h1 { font-size: 20px; font-weight: 700; letter-spacing: -0.3px; }
     .header-text .subtitle { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+    .template-selector {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 12px;
+      margin: 4px 0 2px;
+      border-radius: 20px;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.08);
+      cursor: pointer;
+      transition: all 0.2s ease;
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+    .template-selector:hover {
+      background: rgba(255,255,255,0.08);
+      border-color: rgba(255,255,255,0.15);
+      color: var(--text);
+    }
+    .template-selector .template-label {
+      font-weight: 500;
+      opacity: 0.7;
+    }
+    .template-selector .template-name {
+      font-weight: 600;
+      color: var(--accent2);
+    }
+    .template-selector .template-arrow {
+      font-size: 10px;
+      margin-left: 2px;
+      transition: transform 0.2s;
+    }
+    .template-selector:hover .template-arrow {
+      transform: translateY(1px);
+    }
+    .template-selector.open .template-arrow {
+      transform: rotate(180deg);
+    }
+    .template-dropdown {
+      position: absolute;
+      top: calc(100% + 6px);
+      left: 0;
+      min-width: 260px;
+      background: #0f1923;
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 12px;
+      box-shadow: 0 12px 40px rgba(0,0,0,0.7), 0 0 0 1px rgba(0,0,0,0.3);
+      z-index: 1000;
+      opacity: 0;
+      transform: translateY(-8px) scale(0.96);
+      pointer-events: none;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      overflow: hidden;
+      backdrop-filter: blur(20px);
+    }
+    .template-dropdown.show {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+      pointer-events: auto;
+    }
+    .template-dropdown-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 14px;
+      cursor: pointer;
+      transition: background 0.15s;
+      border-bottom: 1px solid rgba(255,255,255,0.04);
+    }
+    .template-dropdown-item:last-child {
+      border-bottom: none;
+    }
+    .template-dropdown-item:hover {
+      background: rgba(255,255,255,0.06);
+    }
+    .template-dropdown-item.active {
+      background: rgba(95,178,70,0.08);
+    }
+    .template-dropdown-item .tpl-info {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .template-dropdown-item .tpl-name {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text);
+    }
+    .template-dropdown-item.active .tpl-name {
+      color: var(--accent1);
+    }
+    .template-dropdown-item .tpl-desc {
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+    .template-dropdown-item .tpl-check {
+      font-size: 14px;
+      color: var(--accent1);
+      opacity: 0;
+    }
+    .template-dropdown-item.active .tpl-check {
+      opacity: 1;
+    }
+    .template-selector {
+      position: relative;
+    }
 
     /* ── CONTROLS ── */
     .controls {
@@ -130,17 +260,21 @@
       cursor: pointer;
       font-weight: 600;
       font-size: 13px;
-      transition: all 0.15s ease;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      position: relative;
+      overflow: hidden;
     }
-    button:hover { transform: translateY(-1px); }
-    button:active { transform: translateY(0); }
+    button:hover { transform: translateY(-2px); }
+    button:active { transform: translateY(0) scale(0.97); transition-duration: 0.05s; }
 
     .btn-primary {
       background: linear-gradient(135deg, var(--accent1), var(--accent1-dark));
       color: #fff;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.2), 0 0 0 0 color-mix(in srgb, var(--accent1) 30%, transparent);
     }
-    .btn-primary:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.3); }
+    .btn-primary:hover {
+      box-shadow: 0 6px 20px rgba(0,0,0,0.3), 0 0 20px color-mix(in srgb, var(--accent1) 20%, transparent);
+    }
 
     .btn-accent {
       background: linear-gradient(135deg, var(--accent2), var(--accent2-dark));
@@ -168,6 +302,17 @@
       transition: color 0.3s;
     }
 
+    .btn-pip {
+      background: linear-gradient(135deg, #6366f1, #4f46e5);
+      color: #fff;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .btn-pip:hover { box-shadow: 0 4px 16px rgba(99,102,241,0.4); }
+    .btn-pip svg { width: 16px; height: 16px; fill: currentColor; }
+
     /* ── LAYOUT ── */
     .main { display: flex; gap: 20px; }
     .left { flex: 1; min-width: 300px; }
@@ -177,6 +322,166 @@
       .main { flex-direction: column; }
       .right { width: 100%; max-width: 100%; }
       .brand-switcher { width: 100%; justify-content: center; }
+      .inline-editor { display: none !important; }
+      .btn-open-sheet { display: flex !important; }
+      .kbd-hints { display: none; }
+      .time-large { font-size: 54px; }
+      .wrap { padding: 14px; }
+      .controls { gap: 6px; }
+      .controls button { padding: 10px 12px; font-size: 12px; }
+    }
+
+    /* ── BOTTOM SHEET ── */
+    .btn-open-sheet {
+      display: none;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      width: 100%;
+      margin-top: 12px;
+      padding: 14px;
+      background: rgba(255,255,255,0.04);
+      border: 1px dashed rgba(255,255,255,0.12);
+      border-radius: 10px;
+      color: var(--text-muted);
+      font-family: inherit;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .btn-open-sheet:hover {
+      background: rgba(255,255,255,0.08);
+      color: var(--text);
+      border-color: rgba(255,255,255,0.2);
+      transform: none;
+    }
+
+    .sheet-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.6);
+      z-index: 900;
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 0.3s, visibility 0.3s;
+      -webkit-backdrop-filter: blur(4px);
+      backdrop-filter: blur(4px);
+    }
+    .sheet-backdrop.open { opacity: 1; visibility: visible; }
+
+    .sheet-panel {
+      position: fixed;
+      left: 0; right: 0; bottom: 0;
+      z-index: 901;
+      max-height: 85vh;
+      background: linear-gradient(180deg, var(--bg2), var(--bg1));
+      border-top: 1px solid rgba(255,255,255,0.08);
+      border-radius: 20px 20px 0 0;
+      transform: translateY(100%);
+      transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      box-shadow: 0 -8px 40px rgba(0,0,0,0.5);
+      will-change: transform;
+    }
+    .sheet-panel.open { transform: translateY(0); }
+    .sheet-panel.dragging { transition: none; }
+
+    .sheet-handle-bar {
+      display: flex;
+      justify-content: center;
+      padding: 12px 0 4px;
+      cursor: grab;
+      flex-shrink: 0;
+      -webkit-user-select: none;
+      user-select: none;
+    }
+    .sheet-handle-bar::after {
+      content: '';
+      width: 40px;
+      height: 4px;
+      border-radius: 4px;
+      background: rgba(255,255,255,0.2);
+    }
+
+    .sheet-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 4px 20px 12px;
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+      flex-shrink: 0;
+    }
+    .sheet-header h3 {
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--text);
+    }
+    .sheet-close {
+      width: 36px;
+      height: 36px;
+      background: rgba(255,255,255,0.06);
+      border: none;
+      border-radius: 50%;
+      color: var(--text-muted);
+      font-size: 18px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.15s;
+      padding: 0;
+    }
+    .sheet-close:hover { background: rgba(255,255,255,0.12); color: var(--text); transform: none; }
+
+    .sheet-body {
+      flex: 1;
+      overflow-y: auto;
+      padding: 16px 20px 24px;
+      -webkit-overflow-scrolling: touch;
+    }
+    .sheet-body::-webkit-scrollbar { width: 3px; }
+    .sheet-body::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 3px; }
+
+    /* Larger touch targets inside sheet */
+    .sheet-body .agenda-row { padding: 10px 10px; gap: 8px; }
+    .sheet-body .min-stepper .step-btn {
+      width: 44px;
+      height: 44px;
+      font-size: 20px;
+    }
+    .sheet-body .min-stepper .step-val {
+      min-width: 44px;
+      height: 44px;
+      font-size: 16px;
+    }
+    .sheet-body .agenda-row input[type="text"] {
+      font-size: 15px;
+      padding: 10px 12px;
+    }
+    .sheet-body .agenda-row .btn-del {
+      width: 44px;
+      height: 44px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      margin-left: 6px;
+    }
+    .sheet-body .btn-add-seg {
+      padding: 14px;
+      font-size: 14px;
+      margin-top: 8px;
+    }
+    .sheet-body .editor-controls {
+      margin-top: 16px;
+      gap: 10px;
+    }
+    .sheet-body .editor-controls button {
+      padding: 12px 18px;
+      font-size: 14px;
     }
 
     /* ── TIMER ── */
@@ -185,21 +490,24 @@
       align-items: center;
       justify-content: center;
       flex-direction: column;
-      padding: 28px 20px;
+      padding: 32px 20px;
       border-radius: var(--radius);
       background: linear-gradient(180deg, var(--timer1), var(--timer2));
       border: 1px solid rgba(255,255,255,0.05);
       position: relative;
       overflow: hidden;
-      transition: background 0.5s ease;
+      transition: background 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+      animation: fadeInUp 0.6s cubic-bezier(0.4, 0, 0.2, 1) 0.1s both;
     }
     .big-timer::before {
       content: '';
       position: absolute;
       top: 0; left: 0; right: 0;
       height: 2px;
-      background: linear-gradient(90deg, var(--accent1), var(--accent2));
-      opacity: 0.6;
+      background: linear-gradient(90deg, transparent, var(--accent1), var(--accent2), transparent);
+      background-size: 200% 100%;
+      animation: shimmer 3s ease-in-out infinite;
+      opacity: 0.7;
     }
 
     .seg-label {
@@ -213,14 +521,16 @@
     }
 
     .time-large {
-      font-size: 64px;
+      font-size: 72px;
       font-weight: 800;
-      letter-spacing: 2px;
+      letter-spacing: 3px;
       background: linear-gradient(180deg, var(--timer-top), var(--timer-bot));
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
       background-clip: text;
       line-height: 1;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      font-variant-numeric: tabular-nums;
     }
     .time-large.warning {
       background: linear-gradient(180deg, var(--accent2), var(--accent2-dark));
@@ -274,24 +584,140 @@
       margin-bottom: 8px;
     }
 
-    textarea {
-      width: 100%;
-      height: 120px;
-      background: var(--editor-bg);
-      color: var(--editor-color);
-      border-radius: 8px;
-      padding: 12px;
-      border: 1px solid rgba(255,255,255,0.06);
-      resize: vertical;
-      font-family: 'Cascadia Code', 'Fira Code', monospace;
-      font-size: 12px;
-      line-height: 1.5;
-      transition: border-color 0.2s, background 0.5s;
+    .agenda-editor {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
     }
-    textarea:focus {
+    .agenda-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 8px;
+      padding: 6px 8px;
+      transition: border-color 0.2s, background 0.2s;
+    }
+    .agenda-row:hover {
+      border-color: rgba(255,255,255,0.12);
+      background: rgba(255,255,255,0.05);
+    }
+    .agenda-row .row-num {
+      color: var(--text-muted);
+      font-size: 11px;
+      font-weight: 600;
+      width: 18px;
+      text-align: center;
+      flex-shrink: 0;
+    }
+    .agenda-row input[type="text"] {
+      flex: 1;
+      background: transparent;
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 6px;
+      color: var(--text);
+      font-family: inherit;
+      font-size: 13px;
+      padding: 5px 8px;
+      transition: border-color 0.2s;
+    }
+    .agenda-row input[type="text"]:focus {
       outline: none;
-      border-color: rgba(95,178,70,0.4);
-      box-shadow: 0 0 0 3px rgba(95,178,70,0.1);
+      border-color: rgba(95,178,70,0.5);
+    }
+    .min-stepper {
+      display: flex;
+      align-items: center;
+      gap: 0;
+      flex-shrink: 0;
+    }
+    .min-stepper .step-btn {
+      width: 28px;
+      height: 28px;
+      padding: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.1);
+      color: var(--text-muted);
+      font-size: 15px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      line-height: 1;
+      border-radius: 0;
+      overflow: visible;
+    }
+    .min-stepper .step-btn:first-child { border-radius: 6px 0 0 6px; }
+    .min-stepper .step-btn:last-child { border-radius: 0 6px 6px 0; }
+    .min-stepper .step-btn:hover {
+      background: rgba(255,255,255,0.12);
+      color: var(--text);
+      transform: none;
+    }
+    .min-stepper .step-btn:active {
+      background: rgba(255,255,255,0.18);
+      transform: scale(0.92);
+    }
+    .min-stepper .step-val {
+      min-width: 36px;
+      height: 28px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(255,255,255,0.03);
+      border-top: 1px solid rgba(255,255,255,0.1);
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+      color: var(--accent2);
+      font-size: 13px;
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+      user-select: none;
+    }
+    .min-stepper .step-unit {
+      font-size: 10px;
+      color: var(--text-muted);
+      margin-left: 6px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      flex-shrink: 0;
+    }
+    .agenda-row .btn-del {
+      background: none;
+      border: none;
+      color: rgba(255,100,100,0.4);
+      cursor: pointer;
+      font-size: 16px;
+      padding: 2px 4px;
+      border-radius: 4px;
+      transition: color 0.15s, background 0.15s;
+      flex-shrink: 0;
+      margin-left: 4px;
+    }
+    .agenda-row .btn-del:hover {
+      color: #ff4444;
+      background: rgba(255,68,68,0.1);
+      transform: none;
+    }
+    .btn-add-seg {
+      background: rgba(255,255,255,0.03);
+      border: 1px dashed rgba(255,255,255,0.12);
+      border-radius: 8px;
+      color: var(--text-muted);
+      padding: 7px;
+      cursor: pointer;
+      font-family: inherit;
+      font-size: 12px;
+      font-weight: 600;
+      transition: all 0.2s;
+    }
+    .btn-add-seg:hover {
+      border-color: var(--accent1);
+      color: var(--accent1);
+      background: rgba(95,178,70,0.05);
     }
 
     .editor-controls {
@@ -340,15 +766,21 @@
       background: rgba(255,255,255,0.02);
       border: 1px solid rgba(255,255,255,0.03);
       cursor: pointer;
-      transition: all 0.2s ease;
+      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+      animation: slideInRight 0.3s cubic-bezier(0.4, 0, 0.2, 1) both;
     }
-    .segment:hover { background: rgba(255,255,255,0.04); border-color: rgba(255,255,255,0.06); }
+    .segment:hover {
+      background: rgba(255,255,255,0.05);
+      border-color: rgba(255,255,255,0.08);
+      transform: translateX(2px);
+    }
     .segment.current {
       background: color-mix(in srgb, var(--accent1) 10%, transparent);
-      border-color: color-mix(in srgb, var(--accent1) 20%, transparent);
+      border-color: color-mix(in srgb, var(--accent1) 25%, transparent);
       box-shadow: 0 4px 16px color-mix(in srgb, var(--accent1) 10%, transparent);
+      animation: breathe 2.5s ease-in-out infinite;
     }
-    .segment.done { opacity: 0.45; }
+    .segment.done { opacity: 0.4; transform: scale(0.98); }
     .segment.done .seg-name { text-decoration: line-through; }
 
     .seg-index {
@@ -364,7 +796,8 @@
     .segment.current .seg-index {
       background: var(--accent1);
       color: #fff;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+      box-shadow: 0 2px 10px color-mix(in srgb, var(--accent1) 40%, transparent);
+      transform: scale(1.1);
     }
     .segment.done .seg-index {
       background: color-mix(in srgb, var(--accent1) 15%, transparent);
@@ -424,7 +857,13 @@
     <div class="header">
       <img class="logo-img" id="logoImg" src="" alt="Logo" />
       <div class="header-text">
-        <h1>Temporizador L10 (EOS)</h1>
+        <h1>Temporizador de Reuni&otilde;es</h1>
+        <div class="template-selector" id="templateSelector" title="Selecionar template de pauta">
+          <span class="template-label">Template atual:</span>
+          <span class="template-name" id="templateName">Reuni&atilde;o L10 (EOS)</span>
+          <span class="template-arrow">&#9662;</span>
+          <div class="template-dropdown" id="templateDropdown"></div>
+        </div>
         <div class="subtitle" id="brandSubtitle">GCS Agro &mdash; Reuni&atilde;o de Lideran&ccedil;a</div>
       </div>
     </div>
@@ -435,6 +874,7 @@
       <button id="pauseBtn" class="btn-ghost" style="display:none">&#10074;&#10074; Pausar</button>
       <button id="nextBtn" class="btn-ghost">&#9193; Pr&oacute;ximo</button>
       <button id="resetBtn" class="btn-ghost">&#8635; Reset</button>
+      <button id="pipBtn" class="btn-pip" title="Mini Player (Picture-in-Picture)"><svg viewBox="0 0 24 24"><path d="M19 11h-8v6h8v-6zm4 8V4.98C23 3.88 22.1 3 21 3H3c-1.1 0-2 .88-2 1.98V19c0 1.1.9 2 2 2h18c1.1 0 2-.9 2-2zm-2 .02H3V4.97h18v14.05z"/></svg> Mini Player</button>
       <div class="preset-badge" id="presetBadge">L10 GCS &bull; 90 min</div>
     </div>
 
@@ -448,16 +888,24 @@
           <div class="progress" aria-hidden="true"><i id="progressBar"></i></div>
         </div>
 
-        <div class="section-label">Editar agenda (JSON)</div>
-        <textarea id="agendaEditor"></textarea>
+        <div class="inline-editor">
+          <div class="section-label">Editar Agenda</div>
+          <div class="agenda-editor" id="agendaEditor"></div>
+          <button class="btn-add-seg" id="addSegBtn" type="button">+ Adicionar segmento</button>
 
-        <div class="editor-controls">
-          <button id="applyAgenda" class="btn-ghost">Aplicar</button>
-          <button id="loadDefault" class="btn-ghost">Padr&atilde;o L10</button>
-          <div style="flex:1"></div>
-          <label class="toggle"><input type="checkbox" id="autoAdvance" checked/> Auto-avan&ccedil;o</label>
-          <label class="toggle" style="margin-left:10px"><input type="checkbox" id="soundOn" checked/> Som</label>
+          <div class="editor-controls">
+            <button id="applyAgenda" class="btn-ghost">✓ Aplicar</button>
+            <button id="loadDefault" class="btn-ghost">↺ Padrão L10</button>
+            <div style="flex:1"></div>
+            <label class="toggle"><input type="checkbox" id="autoAdvance" checked/> Auto-avan&ccedil;o</label>
+            <label class="toggle" style="margin-left:10px"><input type="checkbox" id="soundOn" checked/> Som</label>
+          </div>
         </div>
+
+        <button class="btn-open-sheet" id="openSheetBtn" type="button">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+          Editar Agenda
+        </button>
 
         <div class="section-label">Controles r&aacute;pidos</div>
         <div class="quick-controls">
@@ -487,6 +935,27 @@
           <div class="footer-stat">Segmento: <strong id="curIdx">&mdash;</strong></div>
           <div class="footer-stat">Restante: <strong id="remainingTotal">90:00</strong></div>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- BOTTOM SHEET (Mobile) -->
+  <div class="sheet-backdrop" id="sheetBackdrop"></div>
+  <div class="sheet-panel" id="sheetPanel">
+    <div class="sheet-handle-bar" id="sheetHandle"></div>
+    <div class="sheet-header">
+      <h3>&#9998; Editar Agenda</h3>
+      <button class="sheet-close" id="sheetClose" type="button">&times;</button>
+    </div>
+    <div class="sheet-body" id="sheetBody">
+      <div class="agenda-editor" id="agendaEditorSheet"></div>
+      <button class="btn-add-seg" id="addSegBtnSheet" type="button">+ Adicionar segmento</button>
+      <div class="editor-controls">
+        <button id="applyAgendaSheet" class="btn-primary">&#10003; Aplicar</button>
+        <button id="loadDefaultSheet" class="btn-ghost">&#8634; Padr&atilde;o L10</button>
+        <div style="flex:1"></div>
+        <label class="toggle"><input type="checkbox" id="autoAdvanceSheet"/> Auto-avan&ccedil;o</label>
+        <label class="toggle" style="margin-left:10px"><input type="checkbox" id="soundOnSheet"/> Som</label>
       </div>
     </div>
   </div>
@@ -645,14 +1114,43 @@
   const autoAdvance = document.getElementById('autoAdvance');
   const soundOn = document.getElementById('soundOn');
 
-  const defaultAgenda = [
-    {name:"CHECK-IN", minutes:5},
-    {name:"Scorecard (KPIs)", minutes:15},
-    {name:"Rocks", minutes:10},
-    {name:"TO-DOS", minutes:5},
-    {name:"IDS (Identify, Discuss, Solve)", minutes:50},
-    {name:"Conclus\u00e3o", minutes:5}
-  ];
+  const TEMPLATES = {
+    'l10': {
+      name: 'Reuni\u00e3o L10 (EOS)',
+      desc: '90 min \u2022 6 segmentos \u2022 Framework EOS',
+      agenda: [
+        {name:"CHECK-IN", minutes:5},
+        {name:"Scorecard (KPIs)", minutes:15},
+        {name:"Rocks", minutes:10},
+        {name:"TO-DOS", minutes:5},
+        {name:"IDS (Identify, Discuss, Solve)", minutes:45},
+        {name:"Conclus\u00e3o", minutes:5}
+      ]
+    },
+    'daily': {
+      name: 'Daily Standup',
+      desc: '15 min \u2022 3 segmentos \u2022 Scrum/\u00c1gil',
+      agenda: [
+        {name:"O que fiz ontem?", minutes:5},
+        {name:"O que vou fazer hoje?", minutes:5},
+        {name:"Impedimentos", minutes:5}
+      ]
+    },
+    'weekly': {
+      name: 'Reuni\u00e3o Semanal',
+      desc: '60 min \u2022 5 segmentos \u2022 Gest\u00e3o',
+      agenda: [
+        {name:"Abertura e Alinhamento", minutes:5},
+        {name:"Resultados da Semana", minutes:15},
+        {name:"Prioridades da Pr\u00f3xima Semana", minutes:15},
+        {name:"Discuss\u00e3o de Problemas", minutes:20},
+        {name:"Encerramento", minutes:5}
+      ]
+    }
+  };
+
+  let currentTemplate = 'l10';
+  const defaultAgenda = TEMPLATES['l10'].agenda;
 
   const $ = id => document.getElementById(id);
   const startBtn = $('startBtn');
@@ -662,7 +1160,7 @@
   const timeDisplay = $('timeDisplay');
   const segmentDisplay = $('segmentDisplay');
   const segmentList = $('segmentList');
-  const agendaEditor = $('agendaEditor');
+  const agendaEditorEl = $('agendaEditor');
   const progressBar = $('progressBar');
   const elapsedEl = $('elapsed');
   const summaryEl = $('summary');
@@ -772,13 +1270,7 @@
 
   function nextSegment() {
     if (cur < segments.length - 1) { cur++; remaining = segments[cur].minutes * 60; updateUI(); }
-    else {
-      // LOOP: reinicia a agenda do início
-      signal();
-      cur = 0;
-      remaining = segments[0].minutes * 60;
-      updateUI();
-    }
+    else { remaining = 0; running = false; clearInterval(intervalId); updateUI(); }
   }
 
   function jumpTo(i) { pause(); cur = i; remaining = segments[cur].minutes * 60; updateUI(); }
@@ -811,18 +1303,151 @@
   $('add2min').addEventListener('click', () => addTime(120));
   $('markDone').addEventListener('click', markDone);
 
+  function buildEditorRows(arr) {
+    agendaEditorEl.innerHTML = '';
+    arr.forEach((item, i) => {
+      const row = document.createElement('div');
+      row.className = 'agenda-row';
+      const mins = Number(item.minutes) || 5;
+      row.innerHTML =
+        '<span class="row-num">' + (i + 1) + '</span>' +
+        '<input type="text" value="' + (item.name || '') + '" placeholder="Nome do segmento">' +
+        '<div class="min-stepper">' +
+          '<button type="button" class="step-btn step-down">&minus;</button>' +
+          '<span class="step-val" data-min="' + mins + '">' + mins + '</span>' +
+          '<button type="button" class="step-btn step-up">&plus;</button>' +
+          '<span class="step-unit">min</span>' +
+        '</div>' +
+        '<button type="button" class="btn-del" title="Remover">&times;</button>';
+
+      const valEl = row.querySelector('.step-val');
+      row.querySelector('.step-down').addEventListener('click', () => {
+        let v = parseInt(valEl.dataset.min) - 1;
+        if (v < 1) v = 1;
+        valEl.dataset.min = v;
+        valEl.textContent = v;
+      });
+      row.querySelector('.step-up').addEventListener('click', () => {
+        let v = parseInt(valEl.dataset.min) + 1;
+        if (v > 120) v = 120;
+        valEl.dataset.min = v;
+        valEl.textContent = v;
+      });
+      row.querySelector('.btn-del').addEventListener('click', () => {
+        row.remove();
+        renumberRows();
+      });
+      agendaEditorEl.appendChild(row);
+    });
+  }
+
+  function renumberRows() {
+    agendaEditorEl.querySelectorAll('.agenda-row').forEach((r, i) => {
+      r.querySelector('.row-num').textContent = i + 1;
+    });
+  }
+
+  function readEditorRows() {
+    const rows = agendaEditorEl.querySelectorAll('.agenda-row');
+    const arr = [];
+    rows.forEach(r => {
+      const name = r.querySelector('input[type="text"]').value.trim();
+      const valEl = r.querySelector('.step-val');
+      const minutes = valEl ? parseInt(valEl.dataset.min) || 5 : 5;
+      if (name) arr.push({ name, minutes });
+    });
+    return arr;
+  }
+
+  $('addSegBtn').addEventListener('click', () => {
+    buildEditorRows([...readEditorRows(), { name: '', minutes: 5 }]);
+    const rows = agendaEditorEl.querySelectorAll('.agenda-row');
+    const last = rows[rows.length - 1];
+    if (last) last.querySelector('input[type="text"]').focus();
+  });
+
   $('applyAgenda').addEventListener('click', () => {
-    try {
-      const parsed = JSON.parse(agendaEditor.value);
-      if (!Array.isArray(parsed)) throw new Error('precisa ser array');
-      parsed.forEach(it => { if (!it.name || isNaN(Number(it.minutes))) throw new Error('name + minutes'); });
-      loadAgenda(parsed);
-    } catch (e) { alert('JSON inválido: ' + e.message); }
+    const parsed = readEditorRows();
+    if (!parsed.length) { alert('Adicione pelo menos um segmento.'); return; }
+    loadAgenda(parsed);
   });
 
   $('loadDefault').addEventListener('click', () => {
-    agendaEditor.value = JSON.stringify(defaultAgenda, null, 2);
-    loadAgenda(defaultAgenda);
+    const tpl = TEMPLATES[currentTemplate];
+    buildEditorRows(tpl.agenda);
+    loadAgenda(tpl.agenda);
+  });
+
+  // ══════════════════════════════════════
+  //  TEMPLATE SELECTOR
+  // ══════════════════════════════════════
+  const templateSelector = $('templateSelector');
+  const templateDropdown = $('templateDropdown');
+  const templateNameEl = $('templateName');
+
+  function buildTemplateDropdown() {
+    templateDropdown.innerHTML = '';
+    Object.keys(TEMPLATES).forEach(key => {
+      const tpl = TEMPLATES[key];
+      const item = document.createElement('div');
+      item.className = 'template-dropdown-item' + (key === currentTemplate ? ' active' : '');
+      item.innerHTML =
+        '<div class="tpl-info">' +
+          '<span class="tpl-name">' + tpl.name + '</span>' +
+          '<span class="tpl-desc">' + tpl.desc + '</span>' +
+        '</div>' +
+        '<span class="tpl-check">\u2713</span>';
+      item.addEventListener('click', (e) => {
+        e.stopPropagation();
+        switchTemplate(key);
+      });
+      templateDropdown.appendChild(item);
+    });
+  }
+
+  function switchTemplate(key) {
+    if (key === currentTemplate) {
+      closeTemplateDropdown();
+      return;
+    }
+    currentTemplate = key;
+    const tpl = TEMPLATES[key];
+    templateNameEl.textContent = tpl.name;
+    buildEditorRows(tpl.agenda);
+    loadAgenda(tpl.agenda);
+    buildTemplateDropdown();
+    closeTemplateDropdown();
+
+    // Update preset badge
+    const totalMin = tpl.agenda.reduce((a, s) => a + s.minutes, 0);
+    const brandName = BRANDS[document.querySelector('.brand-btn.active').dataset.brand].badge;
+    $('presetBadge').innerHTML = brandName + ' &bull; ' + totalMin + ' min';
+  }
+
+  function toggleTemplateDropdown() {
+    const isOpen = templateDropdown.classList.contains('show');
+    if (isOpen) closeTemplateDropdown();
+    else openTemplateDropdown();
+  }
+
+  function openTemplateDropdown() {
+    buildTemplateDropdown();
+    templateDropdown.classList.add('show');
+    templateSelector.classList.add('open');
+  }
+
+  function closeTemplateDropdown() {
+    templateDropdown.classList.remove('show');
+    templateSelector.classList.remove('open');
+  }
+
+  templateSelector.addEventListener('click', (e) => {
+    e.stopPropagation();
+    toggleTemplateDropdown();
+  });
+
+  document.addEventListener('click', () => {
+    closeTemplateDropdown();
   });
 
   window.addEventListener('keydown', (e) => {
@@ -833,9 +1458,399 @@
   });
 
   // ══════════════════════════════════════
+  //  PICTURE-IN-PICTURE (Mini Player)
+  // ══════════════════════════════════════
+  let pipWindow = null;
+
+  function getPipStyles() {
+    const root = document.documentElement;
+    const cs = getComputedStyle(root);
+    const vars = [
+      '--primary','--primary-light','--primary-dark',
+      '--accent1','--accent1-dark','--accent2','--accent2-dark',
+      '--text','--text-muted','--bg1','--bg2','--bg3'
+    ];
+    let cssVars = ':root {';
+    vars.forEach(v => { cssVars += v + ':' + cs.getPropertyValue(v) + ';'; });
+    cssVars += '}';
+
+    return cssVars + `
+      @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap');
+      * { box-sizing: border-box; margin: 0; padding: 0; }
+      body {
+        font-family: 'Inter', system-ui, sans-serif;
+        background: linear-gradient(160deg, var(--bg1), var(--bg2), var(--bg3));
+        color: var(--text);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        height: 100vh;
+        overflow: hidden;
+        padding: 12px;
+        user-select: none;
+      }
+      .pip-segment {
+        font-size: 11px;
+        font-weight: 600;
+        color: var(--accent2);
+        text-transform: uppercase;
+        letter-spacing: 1.2px;
+        margin-bottom: 4px;
+        text-align: center;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 100%;
+      }
+      .pip-time {
+        font-size: 48px;
+        font-weight: 800;
+        letter-spacing: 2px;
+        background: linear-gradient(180deg, #ffffff, #c0d8e8);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        line-height: 1;
+        text-align: center;
+      }
+      .pip-time.warning {
+        background: linear-gradient(180deg, var(--accent2), var(--accent2-dark));
+        -webkit-background-clip: text; background-clip: text;
+      }
+      .pip-time.danger {
+        background: linear-gradient(180deg, #ff4444, #cc2222);
+        -webkit-background-clip: text; background-clip: text;
+        animation: pulse 1s ease-in-out infinite;
+      }
+      @keyframes pulse {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.6; }
+      }
+      .pip-progress {
+        width: 100%;
+        height: 4px;
+        background: rgba(255,255,255,0.08);
+        border-radius: 999px;
+        margin-top: 8px;
+        overflow: hidden;
+      }
+      .pip-progress > i {
+        display: block;
+        height: 100%;
+        background: linear-gradient(90deg, var(--accent1), var(--accent2));
+        width: 0%;
+        transition: width 0.8s ease;
+        border-radius: 999px;
+      }
+      .pip-controls {
+        display: flex;
+        gap: 8px;
+        margin-top: 10px;
+      }
+      .pip-controls button {
+        font-family: inherit;
+        border: none;
+        padding: 6px 14px;
+        border-radius: 6px;
+        cursor: pointer;
+        font-weight: 600;
+        font-size: 13px;
+        transition: all 0.15s ease;
+        color: #fff;
+      }
+      .pip-controls button:hover { transform: translateY(-1px); }
+      .pip-btn-play {
+        background: linear-gradient(135deg, var(--accent1), var(--accent1-dark));
+      }
+      .pip-btn-next {
+        background: rgba(255,255,255,0.1);
+        border: 1px solid rgba(255,255,255,0.15);
+      }
+      .pip-info {
+        font-size: 10px;
+        color: var(--text-muted);
+        margin-top: 6px;
+        text-align: center;
+      }
+    `;
+  }
+
+  function updatePipWindow() {
+    if (!pipWindow || pipWindow.closed) { pipWindow = null; return; }
+    const doc = pipWindow.document;
+    const segLabel = doc.getElementById('pip-seg');
+    const timeEl = doc.getElementById('pip-time');
+    const progEl = doc.getElementById('pip-prog');
+    const playBtn = doc.getElementById('pip-play');
+    const infoEl = doc.getElementById('pip-info');
+    if (!segLabel || !timeEl) return;
+
+    segLabel.textContent = segments[cur] ? segments[cur].name : 'Finalizado';
+    timeEl.textContent = fmt(remaining);
+
+    const segTotal = segments[cur] ? segments[cur].minutes * 60 : 1;
+    const pct = remaining / segTotal;
+    timeEl.className = 'pip-time';
+    if (pct <= 0.1 && remaining > 0) timeEl.classList.add('danger');
+    else if (pct <= 0.25) timeEl.classList.add('warning');
+
+    progEl.style.width = getProgressPercent() + '%';
+    playBtn.textContent = running ? '\u23F8 Pausar' : '\u25B6 Iniciar';
+    infoEl.textContent = (cur + 1) + '/' + segments.length + '  \u2022  Total: ' + fmt(getRemainingTotal());
+  }
+
+  function buildPipContent(doc) {
+    const styleEl = doc.createElement('style');
+    styleEl.textContent = getPipStyles();
+    doc.head.appendChild(styleEl);
+    doc.title = 'L10 Mini Player';
+
+    doc.body.innerHTML = `
+      <div class="pip-segment" id="pip-seg">\u2014</div>
+      <div class="pip-time" id="pip-time">00:00</div>
+      <div class="pip-progress"><i id="pip-prog"></i></div>
+      <div class="pip-controls">
+        <button class="pip-btn-play" id="pip-play">\u25B6 Iniciar</button>
+        <button class="pip-btn-next" id="pip-next">\u23ED Pr\u00f3ximo</button>
+      </div>
+      <div class="pip-info" id="pip-info">\u2014</div>
+    `;
+
+    doc.getElementById('pip-play').addEventListener('click', () => {
+      if (running) pause(); else start();
+    });
+    doc.getElementById('pip-next').addEventListener('click', () => {
+      nextSegment();
+    });
+  }
+
+  async function openPipWindow() {
+    // If already open, just focus it
+    if (pipWindow && !pipWindow.closed) {
+      pipWindow.focus();
+      return;
+    }
+
+    // Try Document PiP API first (Chrome 116+ / Edge 116+)
+    if ('documentPictureInPicture' in window) {
+      try {
+        pipWindow = await window.documentPictureInPicture.requestWindow({
+          width: 320,
+          height: 200,
+        });
+        buildPipContent(pipWindow.document);
+        pipWindow.addEventListener('pagehide', () => { pipWindow = null; });
+        updatePipWindow();
+        return;
+      } catch (e) {
+        console.warn('Document PiP failed, falling back to popup:', e);
+      }
+    }
+
+    // Fallback: window.open() — works on Safari, Firefox, and all browsers
+    const w = 320, h = 220;
+    const left = window.screen.availWidth - w - 20;
+    const top = 40;
+    pipWindow = window.open('', 'l10mini',
+      'width=' + w + ',height=' + h + ',left=' + left + ',top=' + top +
+      ',menubar=no,toolbar=no,location=no,status=no,resizable=yes,scrollbars=no'
+    );
+
+    if (!pipWindow) {
+      alert('N\u00e3o foi poss\u00edvel abrir o Mini Player.\nVerifique se popups est\u00e3o permitidos para este site.');
+      return;
+    }
+
+    pipWindow.document.open();
+    pipWindow.document.write('<!DOCTYPE html><html><head><meta charset="utf-8"></head><body></body></html>');
+    pipWindow.document.close();
+
+    buildPipContent(pipWindow.document);
+
+    // Detect when popup is closed
+    const checkClosed = setInterval(() => {
+      if (!pipWindow || pipWindow.closed) {
+        pipWindow = null;
+        clearInterval(checkClosed);
+      }
+    }, 500);
+
+    updatePipWindow();
+  }
+
+  // Patch updateUI to also update PiP
+  const _originalUpdateUI = updateUI;
+  updateUI = function() {
+    _originalUpdateUI();
+    updatePipWindow();
+  };
+
+  $('pipBtn').addEventListener('click', openPipWindow);
+
+  // ══════════════════════════════════════
+  //  BOTTOM SHEET (Mobile Editor)
+  // ══════════════════════════════════════
+  const sheetBackdrop = $('sheetBackdrop');
+  const sheetPanel = $('sheetPanel');
+  const sheetHandle = $('sheetHandle');
+  const sheetBody = $('sheetBody');
+  const agendaEditorSheet = $('agendaEditorSheet');
+
+  function isMobile() { return window.innerWidth <= 768; }
+
+  function buildSheetRows(arr) {
+    agendaEditorSheet.innerHTML = '';
+    arr.forEach((item, i) => {
+      const row = document.createElement('div');
+      row.className = 'agenda-row';
+      const mins = Number(item.minutes) || 5;
+      row.innerHTML =
+        '<span class="row-num">' + (i + 1) + '</span>' +
+        '<input type="text" value="' + (item.name || '') + '" placeholder="Nome do segmento">' +
+        '<div class="min-stepper">' +
+          '<button type="button" class="step-btn step-down">&minus;</button>' +
+          '<span class="step-val" data-min="' + mins + '">' + mins + '</span>' +
+          '<button type="button" class="step-btn step-up">&plus;</button>' +
+          '<span class="step-unit">min</span>' +
+        '</div>' +
+        '<button type="button" class="btn-del" title="Remover">&times;</button>';
+
+      const valEl = row.querySelector('.step-val');
+      row.querySelector('.step-down').addEventListener('click', () => {
+        let v = parseInt(valEl.dataset.min) - 1;
+        if (v < 1) v = 1;
+        valEl.dataset.min = v;
+        valEl.textContent = v;
+      });
+      row.querySelector('.step-up').addEventListener('click', () => {
+        let v = parseInt(valEl.dataset.min) + 1;
+        if (v > 120) v = 120;
+        valEl.dataset.min = v;
+        valEl.textContent = v;
+      });
+      row.querySelector('.btn-del').addEventListener('click', () => {
+        row.remove();
+        agendaEditorSheet.querySelectorAll('.agenda-row').forEach((r, idx) => {
+          r.querySelector('.row-num').textContent = idx + 1;
+        });
+      });
+      agendaEditorSheet.appendChild(row);
+    });
+  }
+
+  function readSheetRows() {
+    const rows = agendaEditorSheet.querySelectorAll('.agenda-row');
+    const arr = [];
+    rows.forEach(r => {
+      const name = r.querySelector('input[type="text"]').value.trim();
+      const valEl = r.querySelector('.step-val');
+      const minutes = valEl ? parseInt(valEl.dataset.min) || 5 : 5;
+      if (name) arr.push({ name, minutes });
+    });
+    return arr;
+  }
+
+  function syncSheetCheckboxes() {
+    $('autoAdvanceSheet').checked = autoAdvance.checked;
+    $('soundOnSheet').checked = soundOn.checked;
+  }
+
+  function syncFromSheetCheckboxes() {
+    autoAdvance.checked = $('autoAdvanceSheet').checked;
+    soundOn.checked = $('soundOnSheet').checked;
+  }
+
+  function openSheet() {
+    buildSheetRows(segments.map(s => ({ name: s.name, minutes: s.minutes })));
+    syncSheetCheckboxes();
+    sheetBackdrop.classList.add('open');
+    sheetPanel.classList.add('open');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeSheet() {
+    sheetBackdrop.classList.remove('open');
+    sheetPanel.classList.remove('open');
+    sheetPanel.style.transform = '';
+    document.body.style.overflow = '';
+  }
+
+  // Trigger button
+  $('openSheetBtn').addEventListener('click', openSheet);
+  $('sheetClose').addEventListener('click', closeSheet);
+  sheetBackdrop.addEventListener('click', closeSheet);
+
+  // Sheet apply/default
+  $('applyAgendaSheet').addEventListener('click', () => {
+    const parsed = readSheetRows();
+    if (!parsed.length) { alert('Adicione pelo menos um segmento.'); return; }
+    syncFromSheetCheckboxes();
+    loadAgenda(parsed);
+    buildEditorRows(parsed);
+    closeSheet();
+  });
+
+  $('loadDefaultSheet').addEventListener('click', () => {
+    buildSheetRows(defaultAgenda);
+  });
+
+  $('addSegBtnSheet').addEventListener('click', () => {
+    const current = readSheetRows();
+    current.push({ name: '', minutes: 5 });
+    buildSheetRows(current);
+    const rows = agendaEditorSheet.querySelectorAll('.agenda-row');
+    const last = rows[rows.length - 1];
+    if (last) last.querySelector('input[type="text"]').focus();
+  });
+
+  // Drag to dismiss
+  let sheetStartY = 0, sheetCurrentY = 0, sheetDragging = false;
+
+  sheetHandle.addEventListener('touchstart', (e) => {
+    sheetDragging = true;
+    sheetStartY = e.touches[0].clientY;
+    sheetPanel.classList.add('dragging');
+  }, { passive: true });
+
+  document.addEventListener('touchmove', (e) => {
+    if (!sheetDragging) return;
+    sheetCurrentY = e.touches[0].clientY - sheetStartY;
+    if (sheetCurrentY < 0) sheetCurrentY = 0;
+    sheetPanel.style.transform = 'translateY(' + sheetCurrentY + 'px)';
+  }, { passive: true });
+
+  document.addEventListener('touchend', () => {
+    if (!sheetDragging) return;
+    sheetDragging = false;
+    sheetPanel.classList.remove('dragging');
+    if (sheetCurrentY > 120) {
+      closeSheet();
+    } else {
+      sheetPanel.style.transform = '';
+    }
+    sheetCurrentY = 0;
+  });
+
+  // Keyboard avoidance (mobile)
+  if (window.visualViewport) {
+    window.visualViewport.addEventListener('resize', () => {
+      if (sheetPanel.classList.contains('open')) {
+        const offset = window.innerHeight - window.visualViewport.height;
+        sheetPanel.style.paddingBottom = offset + 'px';
+      }
+    });
+    window.visualViewport.addEventListener('scroll', () => {
+      if (sheetPanel.classList.contains('open')) {
+        sheetPanel.style.bottom = '0px';
+      }
+    });
+  }
+
+  // ══════════════════════════════════════
   //  INIT
   // ══════════════════════════════════════
-  agendaEditor.value = JSON.stringify(defaultAgenda, null, 2);
+  buildEditorRows(defaultAgenda);
   loadAgenda(defaultAgenda);
   applyBrand('gcs');
 })();
