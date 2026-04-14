@@ -872,6 +872,7 @@
     <div class="controls">
       <button id="startBtn" class="btn-primary">&#9654; Iniciar</button>
       <button id="pauseBtn" class="btn-ghost" style="display:none">&#10074;&#10074; Pausar</button>
+      <button id="prevBtn" class="btn-ghost">&#9194; Anterior</button>
       <button id="nextBtn" class="btn-ghost">&#9193; Pr&oacute;ximo</button>
       <button id="resetBtn" class="btn-ghost">&#8635; Reset</button>
       <button id="pipBtn" class="btn-pip" title="Mini Player (Picture-in-Picture)"><svg viewBox="0 0 24 24"><path d="M19 11h-8v6h8v-6zm4 8V4.98C23 3.88 22.1 3 21 3H3c-1.1 0-2 .88-2 1.98V19c0 1.1.9 2 2 2h18c1.1 0 2-.9 2-2zm-2 .02H3V4.97h18v14.05z"/></svg> Mini Player</button>
@@ -893,9 +894,12 @@
           <div class="agenda-editor" id="agendaEditor"></div>
           <button class="btn-add-seg" id="addSegBtn" type="button">+ Adicionar segmento</button>
 
-          <div class="editor-controls">
-            <button id="applyAgenda" class="btn-ghost">✓ Aplicar</button>
-            <button id="loadDefault" class="btn-ghost">↺ Padrão L10</button>
+          <div class="editor-controls" style="flex-wrap: wrap;">
+            <div style="display:flex; gap:8px; width:100%; margin-bottom: 8px;">
+              <input type="text" id="customTemplateName" placeholder="Nome do seu novo template..." style="flex:1; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; padding: 10px 14px; color: var(--text); font-size: 13px; font-family: inherit; transition: all 0.2s;" />
+              <button id="applyAgenda" class="btn-accent" style="white-space: nowrap;">&#128190; Salvar Template</button>
+            </div>
+            <button id="loadDefault" class="btn-ghost">↺ Padrão Atual</button>
             <div style="flex:1"></div>
             <label class="toggle"><input type="checkbox" id="autoAdvance" checked/> Auto-avan&ccedil;o</label>
             <label class="toggle" style="margin-left:10px"><input type="checkbox" id="soundOn" checked/> Som</label>
@@ -950,9 +954,12 @@
     <div class="sheet-body" id="sheetBody">
       <div class="agenda-editor" id="agendaEditorSheet"></div>
       <button class="btn-add-seg" id="addSegBtnSheet" type="button">+ Adicionar segmento</button>
-      <div class="editor-controls">
-        <button id="applyAgendaSheet" class="btn-primary">&#10003; Aplicar</button>
-        <button id="loadDefaultSheet" class="btn-ghost">&#8634; Padr&atilde;o L10</button>
+      <div class="editor-controls" style="flex-wrap: wrap;">
+        <div style="display:flex; gap:8px; width:100%; margin-bottom: 8px;">
+          <input type="text" id="customTemplateNameSheet" placeholder="Nome do seu novo template..." style="flex:1; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; padding: 10px 14px; color: var(--text); font-size: 13px; font-family: inherit; transition: all 0.2s;" />
+          <button id="applyAgendaSheet" class="btn-accent" style="white-space: nowrap;">&#128190; Salvar Template</button>
+        </div>
+        <button id="loadDefaultSheet" class="btn-ghost">&#8634; Padr&atilde;o Atual</button>
         <div style="flex:1"></div>
         <label class="toggle"><input type="checkbox" id="autoAdvanceSheet"/> Auto-avan&ccedil;o</label>
         <label class="toggle" style="margin-left:10px"><input type="checkbox" id="soundOnSheet"/> Som</label>
@@ -1149,6 +1156,14 @@
     }
   };
 
+  try {
+    const saved = localStorage.getItem('l10_custom_templates');
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      Object.assign(TEMPLATES, parsed);
+    }
+  } catch(e) {}
+
   let currentTemplate = 'l10';
   const defaultAgenda = TEMPLATES['l10'].agenda;
 
@@ -1289,6 +1304,10 @@
     else { remaining = 0; running = false; clearInterval(intervalId); updateUI(); }
   }
 
+  function prevSegment() {
+    if (cur > 0) { cur--; remaining = segments[cur].minutes * 60; updateUI(); }
+  }
+
   function jumpTo(i) { pause(); cur = i; remaining = segments[cur].minutes * 60; updateUI(); }
 
   function addTime(sec) { remaining = Math.max(0, remaining + sec); updateUI(); }
@@ -1382,11 +1401,40 @@
     if (last) last.querySelector('input[type="text"]').focus();
   });
 
-  $('applyAgenda').addEventListener('click', () => {
+  function saveCustomTemplate(inputEl) {
     const parsed = readEditorRows();
     if (!parsed.length) { alert('Adicione pelo menos um segmento.'); return; }
-    loadAgenda(parsed);
-  });
+    
+    let tplName = inputEl.value.trim();
+    if (!tplName) tplName = 'Template Personalizado';
+    
+    const key = 'custom_' + Date.now();
+    const totalMin = parsed.reduce((a, s) => a + s.minutes, 0);
+
+    const newTpl = {
+      name: tplName,
+      desc: totalMin + ' min \u2022 ' + parsed.length + ' segmentos \u2022 Personalizado',
+      agenda: parsed
+    };
+
+    TEMPLATES[key] = newTpl;
+
+    // Save to localStorage
+    try {
+      const existing = localStorage.getItem('l10_custom_templates');
+      let customObj = existing ? JSON.parse(existing) : {};
+      customObj[key] = newTpl;
+      localStorage.setItem('l10_custom_templates', JSON.stringify(customObj));
+    } catch(e) {
+      console.warn('Could not save to localStorage', e);
+    }
+
+    inputEl.value = '';
+    switchTemplate(key);
+  }
+
+  $('applyAgenda').addEventListener('click', () => saveCustomTemplate($('customTemplateName')));
+  $('applyAgendaSheet').addEventListener('click', () => saveCustomTemplate($('customTemplateNameSheet')));
 
   $('loadDefault').addEventListener('click', () => {
     const tpl = TEMPLATES[currentTemplate];
@@ -1579,7 +1627,7 @@
       .pip-btn-play {
         background: linear-gradient(135deg, var(--accent1), var(--accent1-dark));
       }
-      .pip-btn-next {
+      .pip-btn-nav {
         background: rgba(255,255,255,0.1);
         border: 1px solid rgba(255,255,255,0.15);
       }
@@ -1627,8 +1675,9 @@
       <div class="pip-time" id="pip-time">00:00</div>
       <div class="pip-progress"><i id="pip-prog"></i></div>
       <div class="pip-controls">
-        <button class="pip-btn-play" id="pip-play">\u25B6 Iniciar</button>
-        <button class="pip-btn-next" id="pip-next">\u23ED Pr\u00f3ximo</button>
+        <button class="pip-btn-nav" id="pip-prev">\u23EE Ant</button>
+        <button class="pip-btn-play" id="pip-play" style="flex:1;">\u25B6 Iniciar</button>
+        <button class="pip-btn-nav" id="pip-next">Pr\u00f3x \u23ED</button>
       </div>
       <div class="pip-info" id="pip-info">\u2014</div>
     `;
@@ -1638,6 +1687,9 @@
     });
     doc.getElementById('pip-next').addEventListener('click', () => {
       nextSegment();
+    });
+    doc.getElementById('pip-prev').addEventListener('click', () => {
+      prevSegment();
     });
   }
 
