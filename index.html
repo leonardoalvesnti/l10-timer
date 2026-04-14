@@ -1190,21 +1190,37 @@
     return Math.min(100, Math.round((getElapsed() / Math.max(1, total)) * 100));
   }
 
+  let lastBuiltSegCount = -1;
+
   function rebuildList() {
     segmentList.innerHTML = '';
     segments.forEach((seg, i) => {
       const el = document.createElement('div');
-      const isDone = i < cur;
-      el.className = 'segment' + (i === cur ? ' current' : '') + (isDone ? ' done' : '');
+      el.className = 'segment';
       el.tabIndex = 0;
-      const timeStr = (i === cur) ? fmt(remaining) : fmt(seg.minutes * 60);
+      el.dataset.idx = i;
       el.innerHTML =
-        '<div class="seg-index">' + (isDone ? '\u2713' : i + 1) + '</div>' +
+        '<div class="seg-index">' + (i + 1) + '</div>' +
         '<div class="seg-info"><div class="seg-name">' + seg.name + '</div>' +
         '<div class="seg-duration">' + seg.minutes + ' min</div></div>' +
-        '<div class="seg-time-right">' + timeStr + '</div>';
+        '<div class="seg-time-right">' + fmt(seg.minutes * 60) + '</div>';
       el.addEventListener('click', () => jumpTo(i));
       segmentList.appendChild(el);
+    });
+    lastBuiltSegCount = segments.length;
+    updateList();
+  }
+
+  function updateList() {
+    const items = segmentList.querySelectorAll('.segment');
+    if (items.length !== segments.length) { rebuildList(); return; }
+    items.forEach((el, i) => {
+      const isDone = i < cur;
+      const isCurrent = i === cur;
+      el.className = 'segment' + (isCurrent ? ' current' : '') + (isDone ? ' done' : '');
+      el.querySelector('.seg-index').textContent = isDone ? '\u2713' : i + 1;
+      const timeStr = isCurrent ? fmt(remaining) : fmt(segments[i].minutes * 60);
+      el.querySelector('.seg-time-right').textContent = timeStr;
     });
     const c = segmentList.querySelector('.segment.current');
     if (c) c.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
@@ -1236,7 +1252,7 @@
 
     startBtn.style.display = running ? 'none' : '';
     pauseBtn.style.display = running ? '' : 'none';
-    rebuildList();
+    updateList();
   }
 
   function loadAgenda(arr) {
