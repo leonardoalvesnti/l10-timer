@@ -969,7 +969,7 @@
 
     // Update texts
     document.getElementById('brandSubtitle').textContent = brand.subtitle;
-    document.getElementById('presetBadge').innerHTML = brand.badge + ' \u2022 90 min';
+    document.getElementById('presetBadge').innerHTML = brand.badge + ' \u2022 ' + segments.reduce((a, s) => a + s.minutes, 0) + ' min';
     document.title = 'L10 Timer — ' + brand.name;
 
     // Update active button
@@ -1136,6 +1136,8 @@
 
     const totalMin = Math.floor(segments.reduce((a, s) => a + s.minutes * 60, 0) / 60);
     summaryEl.innerHTML = segments.length + ' itens \u2022 ' + totalMin + ' min';
+    const badge = document.getElementById('presetBadge');
+    if (badge && BRANDS[currentBrand]) badge.innerHTML = BRANDS[currentBrand].badge + ' \u2022 ' + totalMin + ' min';
 
     startBtn.style.display = running ? 'none' : '';
     pauseBtn.style.display = running ? '' : 'none';
