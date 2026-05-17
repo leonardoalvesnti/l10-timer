@@ -990,16 +990,21 @@
   function playBeep() {
     try {
       if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-      const osc = audioCtx.createOscillator();
-      const gain = audioCtx.createGain();
-      osc.connect(gain);
-      gain.connect(audioCtx.destination);
-      osc.type = 'sine';
-      osc.frequency.setValueAtTime(880, audioCtx.currentTime);
-      gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.6);
-      osc.start(audioCtx.currentTime);
-      osc.stop(audioCtx.currentTime + 0.6);
+      // Triple ascending beep for stronger alert
+      const freqs = [660, 880, 1100];
+      const delays = [0, 0.25, 0.5];
+      freqs.forEach((freq, i) => {
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(freq, audioCtx.currentTime + delays[i]);
+        gain.gain.setValueAtTime(0.5, audioCtx.currentTime + delays[i]);
+        gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + delays[i] + 0.3);
+        osc.start(audioCtx.currentTime + delays[i]);
+        osc.stop(audioCtx.currentTime + delays[i] + 0.3);
+      });
     } catch(e) {}
   }
 
@@ -1343,6 +1348,7 @@
       .pip-controls button:hover { transform:translateY(-1px); }
       .pip-btn-play { background:linear-gradient(135deg,var(--accent1),var(--accent1-dark)); }
       .pip-btn-next { background:rgba(255,255,255,0.1); border:1px solid rgba(255,255,255,0.15); }
+      .pip-btn-prev { background:rgba(255,255,255,0.1); border:1px solid rgba(255,255,255,0.15); }
       .pip-info { font-size:10px; color:var(--text-muted); margin-top:6px; text-align:center; }
     `;
   }
@@ -1358,11 +1364,13 @@
       <div class="pip-time" id="pip-time">00:00</div>
       <div class="pip-progress"><i id="pip-prog"></i></div>
       <div class="pip-controls">
+        <button class="pip-btn-prev" id="pip-prev">\u23EE Anterior</button>
         <button class="pip-btn-play" id="pip-play">\u25B6 Iniciar</button>
         <button class="pip-btn-next" id="pip-next">\u23ED Pr\u00f3ximo</button>
       </div>
       <div class="pip-info" id="pip-info">\u2014</div>
     `;
+    doc.getElementById('pip-prev').addEventListener('click', () => { prevSegment(); });
     doc.getElementById('pip-play').addEventListener('click', () => { if (running) pause(); else start(); });
     doc.getElementById('pip-next').addEventListener('click', () => { nextSegment(); });
   }
@@ -1568,7 +1576,8 @@
   }
 
   // ── Main PiP Opener (3-tier) ──
-  async function openPipWindow() {
+  // Hold Shift + click to force Video PiP mode (for testing on Windows)
+  async function openPipWindow(forceVideoPip) {
     // If Document PiP already open, focus it
     if (pipWindow && !pipWindow.closed) { pipWindow.focus(); return; }
     // If Video PiP active, exit it
@@ -1578,7 +1587,8 @@
     }
 
     // Tier 1: Document PiP (Chrome/Edge 116+ — best experience, interactive)
-    if ('documentPictureInPicture' in window) {
+    // Skip if forcing Video PiP for testing
+    if (!forceVideoPip && 'documentPictureInPicture' in window) {
       const ok = await openDocumentPip();
       if (ok) return;
     }
@@ -1601,7 +1611,7 @@
     updateDocTitle();
   };
 
-  $('pipBtn').addEventListener('click', openPipWindow);
+  $('pipBtn').addEventListener('click', (e) => openPipWindow(e.shiftKey));
 
   // ══════════════════════════════════════
   //  BOTTOM SHEET (Mobile Editor)
