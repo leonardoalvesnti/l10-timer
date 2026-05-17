@@ -440,6 +440,16 @@
       0%, 100% { opacity: 1; }
       50% { opacity: 0.6; }
     }
+    .time-large.overtime {
+      background: linear-gradient(180deg, #ff4444, #cc2222);
+      -webkit-background-clip: text;
+      background-clip: text;
+      animation: pulse-danger 0.8s ease-in-out infinite;
+    }
+    .segment.overtime {
+      border-color: rgba(255,68,68,0.4) !important;
+      background: rgba(255,68,68,0.08) !important;
+    }
 
     .agenda-flow {
       font-size: 11px;
@@ -1001,6 +1011,8 @@
   let remaining = 0;
   let running = false;
   let intervalId = null;
+  let segmentHistory = []; // tracks actual time spent per segment
+  let segmentStartTime = null; // when current segment started running
 
   const autoAdvance = document.getElementById('autoAdvance');
   const soundOn = document.getElementById('soundOn');
@@ -1031,9 +1043,11 @@
   const remainingTotalEl = $('remainingTotal');
 
   function fmt(s) {
-    const m = Math.floor(s / 60);
-    const ss = s % 60;
-    return String(m).padStart(2,'0') + ':' + String(ss).padStart(2,'0');
+    const neg = s < 0;
+    const abs = Math.abs(s);
+    const m = Math.floor(abs / 60);
+    const ss = abs % 60;
+    return (neg ? '-' : '') + String(m).padStart(2,'0') + ':' + String(ss).padStart(2,'0');
   }
 
   function getElapsed() {
@@ -1057,9 +1071,23 @@
     segments.forEach((seg, i) => {
       const el = document.createElement('div');
       const isDone = i < cur;
-      el.className = 'segment' + (i === cur ? ' current' : '') + (isDone ? ' done' : '');
+      const isOvertime = (i === cur && remaining < 0);
+      el.className = 'segment' + (i === cur ? ' current' : '') + (isDone ? ' done' : '') + (isOvertime ? ' overtime' : '');
       el.tabIndex = 0;
-      const timeStr = (i === cur) ? fmt(remaining) : fmt(seg.minutes * 60);
+      let timeStr;
+      if (i === cur) {
+        timeStr = fmt(remaining);
+      } else if (isDone && segmentHistory[i]) {
+        const h = segmentHistory[i];
+        const planned = seg.minutes * 60;
+        if (h.overtime) {
+          timeStr = '<span style="color:#ff4444;font-size:0.85em">+' + fmt(h.actual - planned) + '</span>';
+        } else {
+          timeStr = '<span style="color:#5FB246;font-size:0.85em">' + fmt(planned - h.actual) + '</span>';
+        }
+      } else {
+        timeStr = fmt(seg.minutes * 60);
+      }
       el.innerHTML =
         '<div class="seg-index">' + (isDone ? '\u2713' : i + 1) + '</div>' +
         '<div class="seg-info"><div class="seg-name">' + seg.name + '</div>' +
@@ -1077,7 +1105,8 @@
     const segTotal = segments[cur] ? segments[cur].minutes * 60 : 1;
     const pct = remaining / segTotal;
     timeDisplay.className = 'time-large';
-    if (pct <= 0.1 && remaining > 0) timeDisplay.classList.add('danger');
+    if (remaining < 0) timeDisplay.classList.add('overtime');
+    else if (pct <= 0.1 && remaining > 0) timeDisplay.classList.add('danger');
     else if (pct <= 0.25) timeDisplay.classList.add('warning');
 
     currentSegLabel.textContent = segments[cur] ? segments[cur].name : 'Reunião finalizada';
@@ -1105,16 +1134,16 @@
     segments = arr.map(x => ({ name: x.name, minutes: Number(x.minutes) }));
     cur = 0;
     remaining = segments.length ? segments[0].minutes * 60 : 0;
+    segmentHistory = segments.map(() => ({ actual: 0, overtime: false }));
+    segmentStartTime = null;
     updateUI();
   }
 
   function tick() {
     if (!running) return;
-    if (remaining > 0) { remaining--; }
-    else {
-      signal();
-      if (autoAdvance.checked) nextSegment();
-      else { running = false; clearInterval(intervalId); }
+    remaining--;
+    if (remaining === 0) {
+      signal(); // beep when hitting zero
     }
     updateUI();
   }
@@ -1122,17 +1151,33 @@
   function start() {
     if (!segments.length || running) return;
     running = true;
+    if (!segmentStartTime) segmentStartTime = Date.now();
     intervalId = setInterval(tick, 1000);
     updateUI();
   }
 
   function pause() { running = false; clearInterval(intervalId); updateUI(); }
 
-  function reset() { pause(); loadAgenda(segments.map(s => ({ name: s.name, minutes: s.minutes }))); }
+  function reset() { pause(); segmentStartTime = null; loadAgenda(segments.map(s => ({ name: s.name, minutes: s.minutes }))); }
 
   function nextSegment() {
-    if (cur < segments.length - 1) { cur++; remaining = segments[cur].minutes * 60; updateUI(); }
-    else { remaining = 0; running = false; clearInterval(intervalId); updateUI(); }
+    // Record time spent on current segment
+    if (segmentHistory[cur]) {
+      const planned = segments[cur].minutes * 60;
+      const spent = planned - remaining; // if remaining is negative, spent > planned
+      segmentHistory[cur] = { actual: spent, overtime: remaining < 0 };
+    }
+    if (cur < segments.length - 1) {
+      cur++;
+      remaining = segments[cur].minutes * 60;
+      segmentStartTime = Date.now();
+      updateUI();
+    } else {
+      remaining = 0;
+      running = false;
+      clearInterval(intervalId);
+      updateUI();
+    }
   }
 
   function jumpTo(i) { pause(); cur = i; remaining = segments[cur].minutes * 60; updateUI(); }
