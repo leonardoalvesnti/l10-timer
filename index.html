@@ -1057,7 +1057,7 @@
   function getRemainingTotal() {
     let rem = 0;
     for (let i = cur; i < segments.length; i++)
-      rem += (i === cur ? remaining : segments[i].minutes * 60);
+      rem += (i === cur ? Math.max(0, remaining) : segments[i].minutes * 60);
     return rem;
   }
 
@@ -1077,14 +1077,21 @@
       let timeStr;
       if (i === cur) {
         timeStr = fmt(remaining);
-      } else if (isDone && segmentHistory[i]) {
+      } else if (isDone && segmentHistory[i] && segmentHistory[i].actual > 0) {
         const h = segmentHistory[i];
         const planned = seg.minutes * 60;
         if (h.overtime) {
           timeStr = '<span style="color:#ff4444;font-size:0.85em">+' + fmt(h.actual - planned) + '</span>';
         } else {
-          timeStr = '<span style="color:#5FB246;font-size:0.85em">' + fmt(planned - h.actual) + '</span>';
+          const saved = planned - h.actual;
+          if (saved > 0) {
+            timeStr = '<span style="color:#5FB246;font-size:0.85em">-' + fmt(saved) + ' \u2713</span>';
+          } else {
+            timeStr = '<span style="color:#5FB246;font-size:0.85em">\u2713 00:00</span>';
+          }
         }
+      } else if (isDone) {
+        timeStr = '<span style="color:#5FB246;font-size:0.85em">\u2713</span>';
       } else {
         timeStr = fmt(seg.minutes * 60);
       }
@@ -1375,7 +1382,8 @@
     const segTotal = segments[cur] ? segments[cur].minutes * 60 : 1;
     const pct = remaining / segTotal;
     timeEl.className = 'pip-time';
-    if (pct <= 0.1 && remaining > 0) timeEl.classList.add('danger');
+    if (remaining < 0) timeEl.classList.add('danger');
+    else if (pct <= 0.1 && remaining > 0) timeEl.classList.add('danger');
     else if (pct <= 0.25) timeEl.classList.add('warning');
     progEl.style.width = getProgressPercent() + '%';
     playBtn.textContent = running ? '\u23F8 Pausar' : '\u25B6 Iniciar';
@@ -1409,7 +1417,9 @@
     ctx.fillText(segName.toUpperCase(), W / 2, 40);
 
     // Time display
-    if (pct <= 0.1 && remaining > 0) {
+    if (remaining < 0) {
+      ctx.fillStyle = '#ff4444';
+    } else if (pct <= 0.1 && remaining > 0) {
       ctx.fillStyle = '#ff4444';
     } else if (pct <= 0.25) {
       ctx.fillStyle = '#f59e0b';
