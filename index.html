@@ -1183,14 +1183,14 @@
     if (!segmentStartTime) segmentStartTime = Date.now();
     lastTickTime = Date.now();
     if (workerTimer) workerTimer.postMessage('start');
-    else intervalId = setInterval(tick, 1000);
+    intervalId = setInterval(tick, 1000);
     updateUI();
   }
 
   function pause() {
     running = false;
     if (workerTimer) workerTimer.postMessage('stop');
-    else clearInterval(intervalId);
+    clearInterval(intervalId);
     updateUI();
   }
 
