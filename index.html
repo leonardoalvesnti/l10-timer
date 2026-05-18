@@ -1518,13 +1518,14 @@
       const stream = pipCanvas.captureStream(30);
       pipVideo.srcObject = stream;
       
-      // Do not await play here so we don't lose the user gesture token in Safari
-      pipVideo.play().catch(e => console.warn('play failed', e));
-
-      // Request PiP synchronously
+      // Request PiP depending on browser
       if (pipVideo.webkitSetPresentationMode) {
+        // Safari requires synchronous call, do not await play
+        pipVideo.play().catch(e => console.warn('play failed', e));
         pipVideo.webkitSetPresentationMode('picture-in-picture');
       } else {
+        // Chrome/Edge require metadata to be loaded first
+        await pipVideo.play();
         await pipVideo.requestPictureInPicture();
       }
       videoPipActive = true;
