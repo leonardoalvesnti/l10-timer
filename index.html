@@ -1518,16 +1518,11 @@
       const stream = pipCanvas.captureStream(30);
       pipVideo.srcObject = stream;
       
-      // Request PiP depending on browser
-      if (pipVideo.webkitSetPresentationMode) {
-        // Safari requires synchronous call, do not await play
-        pipVideo.play().catch(e => console.warn('play failed', e));
-        pipVideo.webkitSetPresentationMode('picture-in-picture');
-      } else {
-        // Chrome/Edge require metadata to be loaded first
-        await pipVideo.play();
-        await pipVideo.requestPictureInPicture();
-      }
+      // Chrome/Edge/Firefox will request PiP after metadata is loaded.
+      // Safari will likely throw NotAllowedError (lost user gesture), 
+      // which is caught and gracefully falls back to the Popup Window.
+      await pipVideo.play();
+      await pipVideo.requestPictureInPicture();
       videoPipActive = true;
 
       // Setup Media Session controls
