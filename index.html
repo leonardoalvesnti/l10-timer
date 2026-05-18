@@ -1018,6 +1018,7 @@
   let intervalId = null;
   let segmentHistory = []; // tracks actual time spent per segment
   let segmentStartTime = null; // when current segment started running
+  let lastTickTime = null; // tracks actual tick time for Date.now() loop
 
   const autoAdvance = document.getElementById('autoAdvance');
   const soundOn = document.getElementById('soundOn');
@@ -1155,17 +1156,24 @@
 
   function tick() {
     if (!running) return;
-    remaining--;
-    if (remaining === 0) {
-      signal(); // beep when hitting zero
+    const now = Date.now();
+    const diffSecs = Math.round((now - lastTickTime) / 1000);
+    if (diffSecs > 0) {
+      const oldRemaining = remaining;
+      remaining -= diffSecs;
+      lastTickTime = now;
+      if (oldRemaining > 0 && remaining <= 0) {
+        signal(); // beep when crossing zero
+      }
+      updateUI();
     }
-    updateUI();
   }
 
   function start() {
     if (!segments.length || running) return;
     running = true;
     if (!segmentStartTime) segmentStartTime = Date.now();
+    lastTickTime = Date.now();
     intervalId = setInterval(tick, 1000);
     updateUI();
   }
@@ -1496,28 +1504,11 @@
         navigator.mediaSession.setActionHandler('previoustrack', () => { prevSegment(); });
       }
 
-      // Animation loop to redraw canvas
-      function renderLoop() {
-        if (!videoPipActive) return;
-        drawPipCanvas();
-        // Update media session metadata
-        if ('mediaSession' in navigator) {
-          try {
-            navigator.mediaSession.metadata = new MediaMetadata({
-              title: fmt(remaining) + ' \u2014 ' + (segments[cur] ? segments[cur].name : 'Fim'),
-              artist: 'L10 Timer \u2014 GCS Agro',
-              album: (cur + 1) + '/' + segments.length,
-            });
-          } catch(e) {}
-        }
-        pipAnimFrame = requestAnimationFrame(renderLoop);
-      }
-      renderLoop();
+      // PiP canvas updates are now handled synchronously in updateUI() to avoid background throttling
 
       // Listen for PiP close
       pipVideo.addEventListener('leavepictureinpicture', () => {
         videoPipActive = false;
-        if (pipAnimFrame) cancelAnimationFrame(pipAnimFrame);
         pipVideo.srcObject = null;
       }, { once: true });
 
@@ -1611,6 +1602,19 @@
     _originalUpdateUI();
     updateDocPipWindow();
     updateDocTitle();
+    // Also draw the canvas for Video PiP here so it updates even when backgrounded
+    if (videoPipActive && typeof drawPipCanvas === 'function') {
+      drawPipCanvas();
+      if ('mediaSession' in navigator) {
+        try {
+          navigator.mediaSession.metadata = new MediaMetadata({
+            title: fmt(remaining) + ' \u2014 ' + (segments[cur] ? segments[cur].name : 'Fim'),
+            artist: 'L10 Timer \u2014 GCS Agro',
+            album: (cur + 1) + '/' + segments.length,
+          });
+        } catch(e) {}
+      }
+    }
   };
 
   $('pipBtn').addEventListener('click', (e) => openPipWindow(e.shiftKey));
