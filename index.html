@@ -1099,9 +1099,16 @@
   }
 
   function rebuildList() {
-    segmentList.innerHTML = '';
+    if (segmentList.children.length !== segments.length) {
+      segmentList.innerHTML = '';
+      segments.forEach(() => {
+        const el = document.createElement('div');
+        segmentList.appendChild(el);
+      });
+    }
+
     segments.forEach((seg, i) => {
-      const el = document.createElement('div');
+      const el = segmentList.children[i];
       const isDone = i < cur;
       const isOvertime = (i === cur && remaining < 0);
       el.className = 'segment' + (i === cur ? ' current' : '') + (isDone ? ' done' : '') + (isOvertime ? ' overtime' : '');
@@ -1132,11 +1139,14 @@
         '<div class="seg-info"><div class="seg-name">' + seg.name + '</div>' +
         '<div class="seg-duration">' + seg.minutes + ' min</div></div>' +
         '<div class="seg-time-right">' + timeStr + '</div>';
-      el.addEventListener('click', () => jumpTo(i));
-      segmentList.appendChild(el);
+      el.onclick = () => jumpTo(i);
     });
-    const c = segmentList.querySelector('.segment.current');
-    if (c) c.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+
+    if (segmentList.dataset.lastCur !== String(cur)) {
+      const c = segmentList.querySelector('.segment.current');
+      if (c) c.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+      segmentList.dataset.lastCur = String(cur);
+    }
   }
 
   function updateUI() {
