@@ -859,7 +859,7 @@
 
   <!-- Hidden Canvas/Video for Video PiP (Safari/Chrome macOS) -->
   <canvas id="pipCanvas" width="400" height="200" style="display:none"></canvas>
-  <video id="pipVideo" style="display:none" playsinline muted></video>
+  <video id="pipVideo" style="position:fixed; top:-9999px; left:-9999px; width:1px; height:1px; opacity:0.01; pointer-events:none;" playsinline muted></video>
 
 <script>
 (() => {
@@ -1020,6 +1020,14 @@
   let segmentStartTime = null; // when current segment started running
   let lastTickTime = null; // tracks actual tick time for Date.now() loop
 
+  let workerTimer = null;
+  try {
+    const code = `let interval; self.onmessage = function(e) { if (e.data === 'start') { interval = setInterval(() => postMessage('tick'), 1000); } else if (e.data === 'stop') { clearInterval(interval); } };`;
+    const blob = new Blob([code], { type: 'application/javascript' });
+    workerTimer = new Worker(URL.createObjectURL(blob));
+    workerTimer.onmessage = () => { if (typeof tick === 'function') tick(); };
+  } catch(e) {}
+
   const autoAdvance = document.getElementById('autoAdvance');
   const soundOn = document.getElementById('soundOn');
 
@@ -1174,11 +1182,17 @@
     running = true;
     if (!segmentStartTime) segmentStartTime = Date.now();
     lastTickTime = Date.now();
-    intervalId = setInterval(tick, 1000);
+    if (workerTimer) workerTimer.postMessage('start');
+    else intervalId = setInterval(tick, 1000);
     updateUI();
   }
 
-  function pause() { running = false; clearInterval(intervalId); updateUI(); }
+  function pause() {
+    running = false;
+    if (workerTimer) workerTimer.postMessage('stop');
+    else clearInterval(intervalId);
+    updateUI();
+  }
 
   function reset() { pause(); segmentStartTime = null; loadAgenda(segments.map(s => ({ name: s.name, minutes: s.minutes }))); }
 
@@ -1485,10 +1499,16 @@
       // Create stream from canvas
       const stream = pipCanvas.captureStream(30);
       pipVideo.srcObject = stream;
-      await pipVideo.play();
+      
+      // Do not await play here so we don't lose the user gesture token in Safari
+      pipVideo.play().catch(e => console.warn('play failed', e));
 
-      // Request PiP
-      await pipVideo.requestPictureInPicture();
+      // Request PiP synchronously
+      if (pipVideo.webkitSetPresentationMode) {
+        pipVideo.webkitSetPresentationMode('picture-in-picture');
+      } else {
+        await pipVideo.requestPictureInPicture();
+      }
       videoPipActive = true;
 
       // Setup Media Session controls
